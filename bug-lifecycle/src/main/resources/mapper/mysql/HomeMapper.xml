@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.newtouch.buglifecycle.dao.HomeDao">
+
+
+    <resultMap id="pieVOMap" type="com.newtouch.buglifecycle.entity.component.PieVO">
+        <result column="name" jdbcType="VARCHAR"  property="name"/>
+        <result column="value" jdbcType="VARCHAR" property="value"/>
+        <result column="key" jdbcType="VARCHAR" property="key"/>
+        <result column="systemId" jdbcType="VARCHAR" property="systemId"/>
+    </resultMap>
+
+    <resultMap id="comboxVOMap" type="com.newtouch.buglifecycle.entity.component.ComboxVO">
+        <result column="label" jdbcType="VARCHAR"  property="label"/>
+        <result column="value" jdbcType="VARCHAR" property="value"/>
+    </resultMap>
+
+    <select id="getVersionList" resultMap="comboxVOMap">
+        select id `value` ,`name` label from zt_project order by id DESC;
+    </select>
+
+    <select id="getSystemList" resultMap="comboxVOMap">
+        select id `value` ,`name` label from zt_product order by id DESC;
+    </select>
+
+    <sql id="zt_bugJoinTable">
+        zt_bug b
+        LEFT JOIN zt_product pd ON b.product = pd.id
+        LEFT JOIN zt_project pj ON b.project = pj.id
+        WHERE
+        1=1
+        <if test="status != null and status != ''">
+            AND b. STATUS = #{status}
+        </if>
+        <if test="systemName!= null and systemName != ''">
+            AND pd. NAME = #{systemName}
+        </if>
+        <if test="systemId!= null and systemId != ''">
+            AND pd. ID = #{systemId}
+        </if>
+        <choose>
+            <when test="versionIds!=null and versionIds.size() == 1">
+                AND
+                pj.ID = #{versionIds[0]}
+            </when>
+            <when test="versionIds!=null and versionIds.size() > 1">
+                AND
+                pj.ID in
+                <foreach collection="versionIds" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </when>
+            <otherwise>
+                AND
+                pj.name like CONCAT('%' ,RIGHT (YEAR(CURDATE()), 2))
+            </otherwise>
+        </choose>
+    </sql>
+
+    <select id="getRedevBugCount" resultType="java.lang.Integer" >
+        SELECT
+        count(b.id)
+        FROM
+        <include refid="zt_bugJoinTable"/>
+        AND b.type = "redev";
+    </select>
+
+
+    <select id="get24BugCount" resultType="java.lang.Integer" >
+        SELECT
+        count(b.id)
+        FROM
+        <include refid="zt_bugJoinTable"/>
+        AND TIMESTAMPDIFF(
+        HOUR,
+        b.openedDate,
+        now()
+        ) &lt; 24;
+    </select>
+
+    <select id="get48BugCount" resultType="java.lang.Integer" >
+        SELECT
+        count(b.id)
+        FROM
+        <include refid="zt_bugJoinTable"/>
+        AND TIMESTAMPDIFF(
+        HOUR,
+        b.openedDate,
+        now()
+        ) &gt; 48;
+    </select>
+
+    <select id="getBugBySystem" resultMap="pieVOMap" >
+        SELECT
+        pd.name "name",
+        count(b.id) "value",
+        pd.id "key",
+        pd.id systemId
+        FROM
+        <include refid="zt_bugJoinTable"/>
+        GROUP BY
+        pd.id,pd.name
+    </select>
+
+    <select id="getBugByRedev" resultMap="pieVOMap" >
+        SELECT
+        pd.name "name",
+        count(b.id) "value",
+        pd.id "key",
+        pd.id systemId
+        FROM
+        <include refid="zt_bugJoinTable"/>
+        AND b.type = "redev"
+        GROUP BY
+        pd.id,pd.name
+    </select>
+
+    <select id="getBugByOver48" resultMap="pieVOMap" >
+        SELECT
+        pd.name "name",
+        count(b.id) "value",
+        pd.id "key",
+        pd.id systemId
+        FROM
+        <include refid="zt_bugJoinTable"/>
+        AND TIMESTAMPDIFF(
+        HOUR,
+        b.openedDate,
+        now()
+        ) &gt; 48
+        GROUP BY
+        pd.id,pd.name
+    </select>
+
+    <select id="getBugByHour" resultMap="pieVOMap" >
+        SELECT
+        CASE
+        WHEN TIMESTAMPDIFF(HOUR, b.openedDate, now()) &lt; 24 THEN
+        "小于24小时"
+        WHEN TIMESTAMPDIFF(HOUR, b.openedDate, now()) &gt; 24
+        AND TIMESTAMPDIFF(HOUR, b.openedDate, now()) &lt; 48 THEN
+        "小于48小时"
+        WHEN TIMESTAMPDIFF(HOUR, b.openedDate, now()) &gt; 48 THEN
+        "大于48小时"
+        END `name`,
+        count(1) `value`,
+        CASE
+        WHEN TIMESTAMPDIFF(HOUR, b.openedDate, now()) &lt; 24 THEN
+        "lt24"
+        WHEN TIMESTAMPDIFF(HOUR, b.openedDate, now()) &gt; 24
+        AND TIMESTAMPDIFF(HOUR, b.openedDate, now()) &lt; 48 THEN
+        "gt24lt48"
+        WHEN TIMESTAMPDIFF(HOUR, b.openedDate, now()) &gt; 48 THEN
+        "gt48"
+        END `key`
+        FROM
+        zt_bug b
+        LEFT JOIN zt_product pd ON b.product = pd.id
+        LEFT JOIN zt_project pj ON b.project = pj.id
+        WHERE
+        b. STATUS = "active"
+        group by `name`,`key`
+    </select>
+
+
+</mapper>

@@ -1,0 +1,4 @@
+2019-03-19 14:19:19.737 [main] INFO  com.newtouch.buglifecycle.BugLifecycleApplication - Starting BugLifecycleApplication on C64-20180208ZGV with PID 7804 (C:\Users\Administrator\Desktop\defect\eaas\bug-lifecycle\target\classes started by Administrator in C:\Users\Administrator\Desktop\defect\eaas\bug-lifecycle)
+2019-03-19 14:19:19.750 [main] DEBUG com.newtouch.buglifecycle.BugLifecycleApplication - Running with Spring Boot v2.1.3.RELEASE, Spring v5.1.5.RELEASE
+2019-03-19 14:19:19.751 [main] INFO  com.newtouch.buglifecycle.BugLifecycleApplication - The following profiles are active: dev
+2019-03-19 14:19:23.867 [main] INFO  com.newtouch.buglifecycle.BugLifecycleApplication - Started BugLifecycleApplication in 5.5 seconds (JVM running for 10.478)
